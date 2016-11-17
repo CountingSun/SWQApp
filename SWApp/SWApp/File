@@ -1,0 +1,124 @@
+
+
+
+一、说说以下元素的特性和作用
+NSArray、NSSet、NSDictionary与NSMutableArray、NSMutableSet、NSMutableDictionary
+
+参考答案：
+
+特性：
+
+NSArray表示不可变数组，是有序元素集，只能存储对象类型，可通过索引直接访问元素，而且元素类型可以不一样，但是不能进行增、删、改操作；NSMutableArray是可变数组，能进行增、删、改操作。通过索引查询值很快，但是插入、删除等效率很低。
+NSSet表示不可变集合，具有确定性、互异性、无序性的特点，只能访问而不能修改集合；NSMutableSet表示可变集合，可以对集合进行增、删、改操作。集合通过值查询很快，插入、删除操作极快。
+NSDictionary表示不可变字典，具有无序性的特点，每个key对应的值是唯一的，可通过key直接获取值；NSMutableDictionary表示可变字典，能对字典进行增、删、改操作。通过key查询值、插入、删除值都很快。
+作用：
+
+数组用于处理一组有序的数据集，比如常用的列表的dataSource要求有序，可通过索引直接访问，效率高。
+集合要求具有确定性、互异性、无序性，在iOS开发中是比较少使用到的，笔者也不清楚如何说明其作用
+字典是键值对数据集，操作字典效率极高，时间复杂度为常量，但是值是无序的。在ios中，常见的JSON转字典，字典转模型就是其中一种应用。
+
+
+二、请把字符串2015-04-10格式化日期转为NSDate类型
+参考答案：
+NSString *timeStr = @"2015-04-10";
+NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+formatter.dateFormat = @"yyyy-MM-dd";
+formatter.timeZone = [NSTimeZone defaultTimeZone];
+NSDate *date = [formatter dateFromString:timeStr];
+// 2015-04-09 16:00:00 +0000
+NSLog(@"%@", date);
+
+三  请描述一下同步和异步，说说它们之间的区别。
+参考答案：
+
+首先，我们要明确一点，同步和异步都是在线程中使用的。在iOS开发中，比如网络请求数据时，若使用同步请求，则只有请求成功或者请求失败得到响应返回后，才能继续往下走，也就是才能访问其它资源（会阻塞了线程）。网络请求数据异步请求时，不会阻塞线程，在调用请求后，可以继续往下执行，而不用等请求有结果才能继续。
+
+区别：
+
+线程同步：是多个线程访问同一资源时，只有当前正在访问的线程访问结束之后，其他线程才能开始访问（被阻塞）。
+线程异步：是多个线程在访问竞争资源时，可以在空闲等待时去访问其它资源（不被阻塞）。
+
+
+四  7、请简单描述一下队列和多线程的使用原理。
+参考答案：
+
+在iOS中队列分为以下几种：
+
+串行队列：队列中的任务只会顺序执行
+dispatch_queue_t q = dispatch_queue_create("...", DISPATCH_QUEUE_SERIAL);
+
+并行队列： 队列中的任务通常会并发执行
+dispatch_queue_t q = dispatch_queue_create("......", DISPATCH_QUEUE_CONCURRENT);
+
+全局队列：是系统的，直接拿过来（GET）用就可以；与并行队列类似
+
+dispatch_queue_t q = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+
+主队列：每一个应用程序对应唯一一个主队列，直接GET即可；在多线程开发中，使用主队列更新UI
+
+dispatch_queue_t q = dispatch_get_main_queue();
+
+上面这四种是针对GCD来讲的，串行队列中的任务只能一个个地执行，在前一个没有执行完毕之前，下一个只能等待。并行队列可以并发地执行任务，因此多个任务之间执行的顺序不能确定，当添加一个新的任务时，交由GCD来判断是否要创建新的新的线程。
+
+
+五  描述一下iOS的内存管理，在开发中对于内存的使用和优化包含哪些方面。我们在开发中应该注意哪些问题。
+参考答案：
+
+内存管理准则：谁强引用过，谁就在不再使用时使引用计数减一。
+
+对于内存的使用和优化常见的有以下方面：
+
+重用问题：如UITableViewCells、UICollectionViewCells、UITableViewHeaderFooterViews设置正确的reuseIdentifier，充分重用。
+尽量把views设置为不透明：当opque为NO的时候，图层的半透明取决于图片和其本身合成的图层为结果，可提高性能。
+不要使用太复杂的XIB/Storyboard：载入时就会将XIB/storyboard需要的所有资源，包括图片全部载入内存，即使未来很久才会使用。那些相比纯代码写的延迟加载，性能及内存就差了很多。
+选择正确的数据结构：学会选择对业务场景最合适的数组结构是写出高效代码的基础。比如，数组: 有序的一组值。使用索引来查询很快，使用值查询很慢，插入/删除很慢。字典: 存储键值对，用键来查找比较快。集合: 无序的一组值，用值来查找很快，插入/删除很快。
+gzip/zip压缩：当从服务端下载相关附件时，可以通过gzip/zip压缩后再下载，使得内存更小，下载速度也更快。
+延迟加载：对于不应该使用的数据，使用延迟加载方式。对于不需要马上显示的视图，使用延迟加载方式。比如，网络请求失败时显示的提示界面，可能一直都不会使用到，因此应该使用延迟加载。
+数据缓存：对于cell的行高要缓存起来，使得reload数据时，效率也极高。而对于那些网络数据，不需要每次都请求的，应该缓存起来，可以写入数据库，也可以通过plist文件存储。
+处理内存警告：一般在基类统一处理内存警告，将相关不用资源立即释放掉
+重用大开销对象：一些objects的初始化很慢，比如NSDateFormatter和NSCalendar，但又不可避免地需要使用它们。通常是作为属性存储起来，防止反复创建。
+避免反复处理数据：许多应用需要从服务器加载功能所需的常为JSON或者XML格式的数据。在服务器端和客户端使用相同的数据结构很重要。
+使用Autorelease Pool：在某些循环创建临时变量处理数据时，自动释放池以保证能及时释放内存。
+正确选择图片加载方式：详情阅读细读UIImage加载方式
+
+
+六  plist文件是用来做什么的。一般用它来处理一些什么方面的问题。
+参考答案：
+
+plist是iOS系统中特有的文件格式。我们常用的NSUserDefaults偏好设置实质上就是plist文件操作。plist文件是用来持久化存储数据的。
+
+我们通常使用它来存储偏好设置，以及那些少量的、数组结构比较复杂的不适合存储数据库的数据。比如，我们要存储全国城市名称和id，那么我们要优先选择plist直接持久化存储，因为更简单。
+
+七   iOS中缓存一定量的数据以便下次可以快速执行，那么数据会存储在什么地方，有多少种存储方式？
+参考答案：
+
+偏好设置(NSUserDefaults)
+plist文件存储
+归档
+SQLite3
+Core Data
+
+
+11、请简单写出增、删、改、查的SQL语句。
+参考答案：
+
+数据库的简单操作，还是会的，大学可没白学。
+
+增：
+
+insert into tb_blogs(name, url) values('标哥的技术博客','http://www.henishuo.com');
+
+删：
+
+
+delete from tb_blogs where blogid = 1;
+
+改：
+
+
+update tb_blogs set url = 'www.henishuo.com' where blogid = 1;
+
+查：
+
+
+select name, url from tb_blogs where blogid = 1;
